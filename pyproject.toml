@@ -14,15 +14,15 @@ where = ["src"]
 namespaces = false
 
 [project]
-name = "myproject"
+name = "MLP"
 version = "0.1.0"
 description = "A sample project"
 readme = "README.md"
 authors = [
-  { name = "Your Name", email = "you@example.com" },
+  { name = "Gabriel Fruet", github="gabrielfruet" },
 ]
 
 dependencies = [
   "numpy",
-  "pandas",
+  "jax[cuda12]",
 ]
