@@ -1,0 +1,28 @@
+[tool.pyright]
+venvPath = "."
+typeCheckingMode = "standard"
+
+[build-system]
+requires = ["setuptools", "wheel", "basedpyright"]
+build-backend = "setuptools.build_meta"
+
+[tool.setuptools]
+include-package-data = true
+
+[tool.setuptools.packages.find]
+where = ["src"]
+namespaces = false
+
+[project]
+name = "myproject"
+version = "0.1.0"
+description = "A sample project"
+readme = "README.md"
+authors = [
+  { name = "Your Name", email = "you@example.com" },
+]
+
+dependencies = [
+  "numpy",
+  "pandas",
+]
