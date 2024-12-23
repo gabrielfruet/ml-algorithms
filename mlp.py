@@ -1,9 +1,13 @@
 import numpy as np
 import numpy.typing as npt
 import logging
+import time
 
-logger = logging.getLogger('mlp')
-logger.setLevel(logging.DEBUG)
+
+logging.basicConfig()
+logging.root.setLevel(logging.WARNING)
+logger = logging.getLogger('numpy_mlp')
+logger.setLevel(logging.INFO)
 
 and_dataset = [
     ([0,0], 0),
@@ -13,7 +17,6 @@ and_dataset = [
 ]
 
 x_and_dataset = np.array([x for x, _ in and_dataset]).reshape((-1, 2))
-print(x_and_dataset)
 y_and_dataset = np.array([y for _, y in and_dataset]).reshape((-1, 1))
 
 type FArray = npt.NDArray[np.floating]
@@ -68,7 +71,7 @@ def backpropagation_pass(weights: list[FArray],
         if i > 0:
             prev = activations[i-1]
         else:
-            prev = x_and_dataset
+            prev = x_input
 
         logger.debug(f'Delta dimension. \n{delta.shape=}')
         
@@ -100,26 +103,37 @@ w: list[FArray] = [
     np.random.randn(100).reshape((10, 10)),
     np.random.randn(10).reshape((10, 1))
 ]
+
 b: list[FArray] = [
-    np.random.rand(10).reshape((-1)),
-    np.random.rand(10).reshape((-1)),
-    np.random.rand(10).reshape((-1)),
-    np.random.randn(1).reshape((-1))
+    np.random.randn(10),
+    np.random.randn(10),
+    np.random.randn(10),
+    np.random.randn(1)
 ]
 
+BATCH_SIZE = 128
 
 def training_loop():
+    start = time.perf_counter()
     learning_rate = 0.1
-    epochs = 10_000
+    epochs = 100
+
+    repeater = lambda v: np.repeat(v, repeats=BATCH_SIZE//4, axis=0)
+
+    x = repeater(x_and_dataset)
+    y = repeater(y_and_dataset)
 
     for epoch in range(epochs):
-        activations, activated = foward_propagation(x_and_dataset, w, b)
-        error = compute_error(y_and_dataset, activated[-1])
-        print(error)
-        backpropagation_pass(w, b, activations, activated, x_and_dataset, y_and_dataset, learning_rate)
+        activations, activated = foward_propagation(x, w, b)
+        error = compute_error(y, activated[-1])
+        logger.debug(f'Current error: {error}')
+        backpropagation_pass(w, b, activations, activated, x, y, learning_rate)
 
         if epoch % 100 == 0:
             logger.info(f"Epoch {epoch}, Error: {error}")
+
+    end = time.perf_counter()
+    logger.info(f'Training took {end-start} seconds')
 
 training_loop()
 # Final prediction
