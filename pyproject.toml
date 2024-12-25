@@ -19,10 +19,12 @@ version = "0.1.0"
 description = "A sample project"
 readme = "README.md"
 authors = [
-  { name = "Gabriel Fruet", github="gabrielfruet" },
+{ name = "Gabriel Fruet" },
 ]
 
 dependencies = [
-  "numpy",
-  "jax[cuda12]",
+    "numpy",
+    "jax[cuda12]",
+    "keras",
+    "tqdm"
 ]

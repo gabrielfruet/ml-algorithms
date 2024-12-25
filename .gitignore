@@ -1,1 +1,4 @@
 .venv/
+.virtual_documents/
+**/*.egg-info/
+**/.ipynb_checkpoints/

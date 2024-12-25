@@ -94,18 +94,19 @@ def backpropagation_pass(weights: list[jnp.ndarray],
         # If we are not on the first layer,
         # we need to use the previous activation as the delta
         if i > 0:
-            prev = activations[i-1]
+            prev = activated[i-1]
         else:
             prev = x_input
 
         logger.debug(f'Delta dimension. \n{jnp.shape(delta)=}')
         logger.debug(f'Prev dimension. \n{jnp.shape(prev)=}')
         
-        # The gradient of the weights is the dot product of the previous activation and the delta
+        # The gradient of the weights is the dot product of the previous
+        # activation after the activation function and the delta
         # The delta is the error gradient of the current layer
-        # Example: In the special case of the last layer, gradient is how much each activation
-        # influeced in the error, this is shown by the delta, that is the error gradient for each
-        # neuron based on its weights.
+        # Example: In the special case of the last layer, gradient is how much
+        # each activation influeced in the error, this is shown by the delta,
+        # that is the error gradient for each neuron based on its weights.
         grad_w = prev.T @ delta  
         logger.debug(f'Calculating weight gradient. \n{jnp.shape(grad_w)=}')
 
