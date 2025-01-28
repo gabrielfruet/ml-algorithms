@@ -26,5 +26,6 @@ dependencies = [
     "numpy",
     "jax[cuda12]",
     "keras",
-    "tqdm"
+    "tqdm",
+    "matplotlib>=3.10.0",
 ]
