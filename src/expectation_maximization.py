@@ -1,6 +1,5 @@
-from src.correlation_matrix import correlate
-
-import jax
+from typing import Any
+from correlation_matrix import correlate
 import jax.numpy as jnp
 import pandas as pd
 from jax.scipy.optimize import minimize
@@ -34,14 +33,14 @@ def em(X, k: int, maxiter=100, seed=42):
         # E-step
         for i, sample in enumerate(classes):
             mu = sample.mean(axis=0)
-            sigma = jnp.cov(sample.T)
+            sigma = (sample - mu).T @ (sample - mu) / len(sample)
+            # sigma = correlate(sample - mu)
             means = means.at[i].set(mu)
             covariances = covariances.at[i].set(sigma)
 
         # M-step
         for i in range(k):
             p = multivariate_gaussian_pdf(X, means[i], covariances[i])
-            print(f'{p=}')
             probs = probs.at[i].set(p)
 
         choices = probs.argmax(axis=0)
@@ -65,7 +64,7 @@ if __name__ == '__main__':
 
     fig, ax = plt.subplots(figsize=(6,6))
 
-    def update(frame):
+    def update(frame) -> Any:
         ax.clear()
         classes, means, covariances = frame
         for i, (sample, mean, cov) in enumerate(zip(classes, means, covariances)):
@@ -81,12 +80,13 @@ if __name__ == '__main__':
             ax.add_patch(ellipse_1std)
             ax.add_patch(ellipse_2std)
             ax.scatter(*mean, color=color, label=f'Mean {i}')
+
         ax.set_xlabel('X')
         ax.set_ylabel('Y')
         ax.legend()
         ax.grid()
 
-    frames = list(em(X, 2, maxiter=10))
+    frames = list(em(X, 2, maxiter=5))
     ani = animation.FuncAnimation(fig, update, frames=frames, repeat=False)
 
     ani.save("em_animation.gif", writer="pillow", fps=1)
