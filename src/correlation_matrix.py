@@ -1,28 +1,41 @@
 import jax.numpy as jnp
 import jax
+from jax import vmap
 
-def correlate(x,y, p=None):
-    assert len(x.shape) == 1, "X must be a 1D array"
-    assert len(y.shape) == 1, "Y must be a 1D array"
-
+def correlate(x,y=None, p=None, cov=False):
+    if y == None:
+        y = x
+    
     n = x.shape[0]
+
+    assert len(x.shape) == len(y.shape), "X and Y must have the same shape"
+
+    if len(x.shape) > 1:
+        return jnp.mean(vmap(correlate, in_axes=(0,0,None))(x, y, p), axis=0)
 
     assert x.shape[0] == y.shape[0], "X and Y must have the same length"
 
     if p is None:
         p = n
 
-    assert p <= n, "p must be less than the number of columns in X and Y"
+    assert p <= n, "p must be less than or equal to the number of columns in X\
+    and Y"
 
-    X = jnp.zeros((p,n))
-    Y = jnp.zeros((p,n))
+    X = lagged_matrix(x - x.mean(), p)
+    Y = lagged_matrix(y - y.mean(), p)
+
+    if cov:
+        return (Y.T @ X)/(n-p+1)
+    return (Y.T @ X)/n
+
+def lagged_matrix(X,p=3):
+    n = len(X)
+    M = jnp.zeros((p,n+p-1))
 
     for i in range(p):
-        X = X.at[i].set(jnp.roll(x, shift=i))
-        Y = Y.at[i].set(jnp.roll(y, shift=i))
+        M = M.at[i, i:n+i].set(X)
 
-    return (X @ Y.T) / n
-
+    return M.T
 
 
 if __name__ == '__main__':
