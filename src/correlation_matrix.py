@@ -23,6 +23,9 @@ def correlate(x,y=None, p=None, cov=False):
     assert p <= n, "p must be less than or equal to the number of columns in X\
     and Y"
 
+    X = lagged_matrix(x, p)
+    Y = lagged_matrix(y, p)
+
     if cov:
         X = cov_lagged_matrix(x, p)
         Y = cov_lagged_matrix(y, p)
