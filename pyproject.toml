@@ -29,4 +29,6 @@ dependencies = [
     "tqdm",
     "matplotlib>=3.10.0",
     "pandas>=2.2.3",
+    "sounddevice>=0.5.1",
+    "soundfile>=0.13.1",
 ]

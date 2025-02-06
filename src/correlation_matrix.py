@@ -3,9 +3,9 @@ import jax
 from jax import vmap
 
 def correlate(x,y=None, p=None, cov=False):
-    if y == None:
+    if y is None:
         y = x
-    
+
     n = x.shape[0]
 
     assert len(x.shape) == len(y.shape), "X and Y must have the same shape"
