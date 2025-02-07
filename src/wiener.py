@@ -6,6 +6,7 @@ from scipy.io import wavfile
 import numpy as np
 import soundfile as sf
 import sounddevice as sd
+from src.correlation_matrix import correlate
 
 @jax.jit
 def cov(x, y):
@@ -15,8 +16,8 @@ def cov(x, y):
     y_bar = y - μ_y
     return x_bar.T @ y_bar / len(x)
 
-def wiener_fit(x, d, filter_size=10):
-    x,d = wiener_filter_inputs_sampling(x, d, filter_size)
+def wiener_fit(x, d, filter_size=10, method='custom'):
+    xn,d = wiener_filter_inputs_sampling(x, d, filter_size)
 
     # Explicação p_xd Isso é a correlação entre cada x de entrada do filtro com
     # o valor d esperado. Ou seja, como cada x influencia em d. Essa correlação
@@ -24,8 +25,11 @@ def wiener_fit(x, d, filter_size=10):
     # tem 990 amostras de tamanho 10, e d tem 990 amostras(o resultado da
     # aplicação do filtro nas 10 amostras de x) então a correlação terá tamanho
     # 10, que vai ser a correlação media da iésima amostra com a saída d.
-    p_xd = cov(x, d)
-    Rx = cov(x, x)
+    p_xd = cov(xn, d)
+    if method == 'custom':
+        Rx = correlate(x - x.mean(axis=0), x - x.mean(axis=0), p=filter_size, cov=True)
+    else:
+        Rx = cov(xn, xn)
     w_opt = jnp.linalg.solve(Rx, p_xd)
     return jnp.squeeze(w_opt)
 
@@ -42,11 +46,6 @@ def wiener_apply(x, w_opt):
     x = x
     w_opt = w_opt[::-1]  # Reverse the filter for correct convolution behavior
 
-    # result = jax.lax.conv_general_dilated(
-    #     x, w_opt,
-    #     window_strides=(1,),  # Stride of 1
-    #     padding="SAME",  # Equivalent to 'same' filtering behavior
-    # )
     result = jnp.convolve(x, w_opt, mode='same')
 
     return result
@@ -61,12 +60,12 @@ def wiener_filter_inputs_sampling(x, d, filter_size):
 
     return x_new, d_new
 
-def main1():
+def main1(sin_amp=5):
     key = jax.random.PRNGKey(0)
     n_samples = 1000
     filter_size = 100
     t = jnp.linspace(0, 10, n_samples)
-    d = jnp.sin(t) * 30
+    d = jnp.sin(t) * sin_amp
     key, subkey = jax.random.split(key)
     v1 = jax.random.normal(subkey, (n_samples,)) * 0.5
     key, subkey = jax.random.split(key)
@@ -134,7 +133,7 @@ def main3(filter_size=FILTER_SIZE, batch_size=BATCH_SIZE, noise_gain: float = 0.
         key, subkey = jax.random.split(key)
         return jax.random.normal(subkey, shape) * noise_gain, key
 
-    noise, key = generate_noise((len(audio),2), key)
+    v1_noise, key = generate_noise((len(audio),2), key)
     number_of_batches = len(audio) // batch_size
 
     print('Number of batches: ',number_of_batches)
@@ -144,13 +143,15 @@ def main3(filter_size=FILTER_SIZE, batch_size=BATCH_SIZE, noise_gain: float = 0.
 
     device = jax.devices()[0]
 
-    for i,(desired_signal, noise_sample) in enumerate(zip(audio.T, noise.T)):
+    for i,(desired_signal, v1_noise_sample) in enumerate(zip(audio.T, v1_noise.T)):
         print(f'Processing {i}th channel')
+        v2_noise_sample, key = generate_noise((len(desired_signal), ), key)
+
         with tqdm.tqdm(total=number_of_batches) as pbar:
             w_opt = jnp.zeros(filter_size)
 
-            for d,v1 in zip(slicer(desired_signal), slicer(noise_sample)):
-                v2, key = generate_noise(len(d), key)
+
+            for d,v1,v2 in zip(slicer(desired_signal), slicer(v1_noise_sample), slicer(v2_noise_sample)):
                 x = d + v1
                 w_opt_j = wiener_fit(v2, x, filter_size)
                 w_opt += w_opt_j * len(x)/len(desired_signal)
@@ -162,16 +163,15 @@ def main3(filter_size=FILTER_SIZE, batch_size=BATCH_SIZE, noise_gain: float = 0.
                 pbar.set_postfix(mem=f'{cuda_mem["bytes_in_use"] / 1024 ** 2:.2f} MB')
                 pbar.refresh()
 
-            gen_noise, key = generate_noise((len(desired_signal), ), key)
 
-            d_hat = wiener_apply(gen_noise, w_opt)
-            pbar.set_postfix(error=jnp.sqrt(jnp.mean((noise_sample - d_hat)**2)))
-            audio_hat.append(desired_signal + noise_sample - d_hat)
+            v1_hat = wiener_apply(v2_noise_sample, w_opt)
+            pbar.set_postfix(error=jnp.sqrt(jnp.mean((v1_noise_sample - v1_hat)**2)))
+            audio_hat.append(desired_signal + v1_noise_sample - v1_hat)
             # audio_hat.append(d_hat)
 
     audio_hat = jnp.stack(audio_hat).T
     sf.write('./bachfugue_filtered2.wav', audio_hat, sr)
-    sf.write('./bachfugue_noisy2.wav', audio + noise, sr)
+    sf.write('./bachfugue_noisy2.wav', audio + v1_noise, sr)
 
 if __name__ == '__main__':
     main2()
