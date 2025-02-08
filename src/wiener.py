@@ -20,7 +20,7 @@ def wiener_fit(x, d, filter_size=10, method='custom'):
     # 10, que vai ser a correlação media da iésima amostra com a saída d.
     p_xd = corr(xn, d)
     if method == 'custom':
-        Rx = correlate(x,x, p=filter_size)
+        Rx = correlate(x,x, p=filter_size, cov=True)
     else:
         Rx = corr(xn, xn)
     w_opt = jnp.linalg.solve(Rx, p_xd)
@@ -37,9 +37,8 @@ def wiener_sample_indexes(sample_size, filter_size):
 
 def wiener_apply(x, w_opt):
     x = x
-    w_opt = w_opt[::-1]  # Reverse the filter for correct convolution behavior
 
-    result = jnp.convolve(x, w_opt, mode='same')
+    result = jnp.correlate(x, w_opt[::-1], mode='same')
 
     return result
 
