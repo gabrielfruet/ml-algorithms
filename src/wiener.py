@@ -83,9 +83,12 @@ def main1(sin_amp=5, filter_size=100):
 FILTER_SIZE = 32
 BATCH_SIZE=2 ** 14
 
-def sin_audio(sr=4800, duration_seconds=5, freq=440):
+def sin_audio(sr=4800, duration_seconds=5, freqs=(440,)):
     t = jnp.linspace(0, duration_seconds, sr * duration_seconds)
-    audio_sing_channel = jnp.sin(2 * jnp.pi * freq * t)
+    audio_sing_channel = jnp.zeros_like(t)
+    n_freqs = len(freqs)
+    for freq in freqs:
+        audio_sing_channel += jnp.sin(2 * jnp.pi * freq * t) / n_freqs
     return jnp.stack([audio_sing_channel, audio_sing_channel]).T, sr
 
 
@@ -133,9 +136,13 @@ def main3(
         filter_size=FILTER_SIZE,
         batch_size=BATCH_SIZE,
         noise_gain: float = 0.1,
-        audio_sampler=batchfuge_audio,
+        audio_sample=None,
         method='custom'):
-    audio, sr = audio_sampler()
+
+    if audio_sample is None:
+        audio_sample = batchfuge_audio()
+
+    audio, sr = audio_sample
     audio_hat = []
 
     if batch_size == -1:
