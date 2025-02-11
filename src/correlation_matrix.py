@@ -7,7 +7,7 @@ def correlate(x,y=None, p=None, cov=False):
     if y is None:
         y = x
 
-    n = x.shape[0]
+    n = x.shape[-1]
 
     if p is None:
         p = n
@@ -15,7 +15,7 @@ def correlate(x,y=None, p=None, cov=False):
 
     assert len(x.shape) == len(y.shape), "X and Y must have the same shape"
 
-    assert x.shape[0] == y.shape[0], "X and Y must have the same length"
+    assert x.shape[-1] == y.shape[-1], "X and Y must have the same length"
 
     if p > n:
         raise ValueError("p must be less than or equal to the number of columns in X and Y")
