@@ -3,7 +3,7 @@ import tqdm
 import jax.numpy as jnp
 from matplotlib import pyplot as plt
 import soundfile as sf
-from src.correlation_matrix import correlate
+from correlation_matrix import correlate
 
 @jax.jit
 def corr(x, y):
@@ -33,12 +33,15 @@ def wiener_sample_indexes(sample_size, filter_size):
     # cada linha é um conjunto de índices que representam uma janela de
     # amostras de tamanho filter_size
     samples_indexes = sample_window[:, None] + filter_padding
+    samples_indexes = jnp.flip(samples_indexes, axis=1)
     return samples_indexes
 
 def wiener_apply(x, w_opt):
     x = x
-
-    result = jnp.correlate(x, w_opt[::-1], mode='same')
+    # Convolução, porque o filtro é treinado de maneira reversa
+    # (wiener_sample_indexes é reverso) então deve ser aplicado
+    # de maneira reversa
+    result = jnp.convolve(x, w_opt, mode='same')
 
     return result
 
@@ -92,7 +95,7 @@ def sin_audio(sr=4800, duration_seconds=5, freqs=(440,)):
 
 
 def batchfuge_audio():
-    audio, sr = sf.read('./bachfugue.wav')
+    audio, sr = sf.read('../bachfugue.wav')
     return audio, sr
 
 def main2(filter_size=FILTER_SIZE, batch_size=BATCH_SIZE):
@@ -190,13 +193,8 @@ def main3(
 
 
             v1_hat = wiener_apply(noisy_signal, w_opt)
-            # fig, ax = plt.subplots(1, 3, figsize=(15, 5))
-            # ax[0].plot((desired_signal)[0:1000], label='original signal')
-            # ax[1].plot((desired_signal + v1_noise_sample - v1_hat)[0:1000], label='estimated signal')
-            # ax[2].plot((desired_signal + v1_noise_sample)[0:1000], label='noisy signal')
-            # fig.legend()
-            # fig.show()
             pbar.set_postfix(error=jnp.sqrt(jnp.mean((v1_noise_sample - v1_hat)**2)))
+
             audio_hat.append(noisy_signal - v1_hat)
 
     def normalize(x):
@@ -209,4 +207,4 @@ def main3(
 
 
 if __name__ == '__main__':
-    main2()
+    main3(audio_sample=sin_audio())
