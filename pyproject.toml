@@ -31,4 +31,5 @@ dependencies = [
     "pandas>=2.2.3",
     "sounddevice>=0.5.1",
     "soundfile>=0.13.1",
+    "scienceplots>=2.1.1",
 ]
