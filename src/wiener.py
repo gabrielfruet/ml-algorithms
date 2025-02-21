@@ -72,10 +72,9 @@ def main1(sin_amp=5, filter_size=100):
     ax[0].set_title('Desired Signal')
     ax[1].plot(t, x, label='Noisy Signal')
     ax[1].set_title('Noisy Signal')
-    breakpoint()
 
-    v2_hat = wiener_apply(x, w_opt)
-    ax[2].plot(t[:len(v2_hat)], x - v2_hat, label='Filtered Signal')
+    v1_hat = wiener_apply(x, w_opt)
+    ax[2].plot(t[:len(v1_hat)], x - v1_hat, label='Filtered Signal')
     ax[2].set_title('Filtered Signal')
 
     for a in ax:
